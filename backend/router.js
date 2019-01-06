@@ -1,9 +1,15 @@
 const express = require('express')
 const router = express.Router()
 const User = require('./models/User')
+const Album = require('./models/Album')
+const Photo = require('./models/Photo')
 const jwt = require('jsonwebtoken')
 const passport = require('passport')
+const multer  = require('multer')
+const upload = multer({ dest: 'uploads/' })
 const {secret} = require('./config')
+
+
 
 router.get('/', (req, res) => {
     res.send('Hello World!')
@@ -46,8 +52,98 @@ router.post('/signup', async (req, res) => {
 
 })
 
-router.get('/profile', passport.authenticate('jwt', {session:false}),(req, res) => {
-    res.send('HELLO USER))0())')
+router.get('/user/:id', passport.authenticate('jwt', {session:false}), async (req, res) => {
+    const id = req.params.id
+    try {
+        const user = await User.findOne({_id: id})
+        if(!user){
+            res.status(404)
+        }else{
+            const name = `${user.firstName} ${user.lastName}`
+            const email = user.email
+            const age = user.age
+            res.json({name, email, age})
+        }
+    } catch (e) {
+        res.status(500).send({msg: e})
+    }
 })
+
+router.post('/user/:id/albums/add', passport.authenticate('jwt', {session:false}), async(req, res) => {
+    const id = req.params.id
+    const { title, description } = req.body
+
+    try {
+        const album = await Album.create({title, description, user: id})
+        if(!album){
+            res.status(404)
+        }else {
+            res.json(album)
+        }
+    } catch (e) {
+        res.status(500).json({msg: e})
+    }
+})
+
+router.get('/user/:id/albums', passport.authenticate('jwt', {session:false}), async(req, res) => {
+    const id = req.params.id
+
+    try {
+        const album = await Album.find({})
+        if(!album){
+            res.status(404)
+        }else {
+            res.json(album)
+        }
+    } catch (e) {
+        res.status(500)
+    }
+
+})
+
+router.get('/album/:id/', passport.authenticate('jwt', {session:false}), async (req, res) => {
+    try {
+        const album = await Album.findOne({_id: req.params.id})
+        if(!album){
+            res.status(500)
+        }
+        const photos = albuma.photos
+        res.json(photos)
+    } catch (e) {
+        res.status(404)
+    }
+})
+
+router.post('/photos/add', passport.authenticate('jwt', {session:false}), upload.single('avatar'), async(req, res) => {
+    const { title, album } = req.body
+    const img  = req.file
+
+    try {
+        const photo = await Photo.create({title: title, link: img.path})
+        if(!photo) res.status(500)
+        await Album.update({_id: album}, {$push: {...photo}})
+        res.json(photo)
+    } catch (e) {
+        res.status(404)
+    }
+
+})
+
+router.get('/photos/new', passport.authenticate('jwt', {session:false}), async(req, res) => {
+    const limVal = req.query.limit || 30
+
+    try {
+        const photos = await Photo.find({}).limit(limVal)
+        if(!photos){
+            res.status(404)
+        }else{
+            res.json(photos)
+        }
+    } catch (e) {
+        res.status(404)
+    }
+})
+
+
 
 module.exports = router
