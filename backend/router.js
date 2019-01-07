@@ -5,8 +5,8 @@ const Album = require('./models/Album')
 const Photo = require('./models/Photo')
 const jwt = require('jsonwebtoken')
 const passport = require('passport')
-const multer  = require('multer')
-const upload = multer({ dest: 'uploads/' })
+var multer  = require('multer')
+var upload = multer({ dest: 'uploads/' })
 const {secret} = require('./config')
 
 
@@ -89,11 +89,11 @@ router.get('/user/:id/albums', passport.authenticate('jwt', {session:false}), as
     const id = req.params.id
 
     try {
-        const album = await Album.find({})
-        if(!album){
+        const albums = await Album.find({})
+        if(!albums){
             res.status(404)
         }else {
-            res.json(album)
+            res.json(albums)
         }
     } catch (e) {
         res.status(500)
@@ -119,9 +119,9 @@ router.post('/photos/add', passport.authenticate('jwt', {session:false}), upload
     const img  = req.file
 
     try {
-        const photo = await Photo.create({title: title, link: img.path})
+        const photo = await Photo.create({title: title, link: 'https://avatars.mds.yandex.net/get-pdb/25978/3d6f5902-98ba-4f0d-a2b7-d62a8acad5f2/s1200'})
         if(!photo) res.status(500)
-        await Album.update({_id: album}, {$push: {...photo}})
+        await Album.updateOne({_id: album}, {$push: {photos: {ref: photo._id}}})
         res.json(photo)
     } catch (e) {
         res.status(404)

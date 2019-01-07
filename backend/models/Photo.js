@@ -11,7 +11,17 @@ const photoSchema = new mongoose.Schema({
     link: {
         type: String,
         required: true
-    }
+    },
+    comments: [{
+        user: {
+            type: mongoose.Types.ObjectId,
+            required: true
+        },
+        text: {
+            type: String,
+            required: true
+        }
+    }]
 })
 
 const photoModel = mongoose.model('photo', photoSchema)
